@@ -111,10 +111,10 @@ class Module
             $this->zendSentry->registerShutdownFunction();
         }
 
-        // If ZendSentry is configured to log Javascript errors, add needed scripts to the view
-        if ($this->config['zend-sentry']['handle-javascript-errors']) {
-            $this->setupJavascriptLogging($event);
-        }
+        // // If ZendSentry is configured to log Javascript errors, add needed scripts to the view
+        // if ($this->config['zend-sentry']['handle-javascript-errors']) {
+        //     $this->setupJavascriptLogging($event);
+        // }
     }
 
     /**
@@ -123,7 +123,7 @@ class Module
     public function getAutoloaderConfig()
     {
         return array('Zend\Loader\StandardAutoloader' => array('namespaces' => array(
-            __NAMESPACE__ => __DIR__ . '/src/' . __NAMESPACE__,
+            __NAMESPACE__ => __DIR__.'/src/'.__NAMESPACE__,
         )));
     }
 
@@ -132,7 +132,7 @@ class Module
      */
     public function getConfig()
     {
-        return include __DIR__ . '/config/module.config.php';
+        return include __DIR__.'/config/module.config.php';
     }
 
     /**
@@ -152,7 +152,7 @@ class Module
         $sharedManager->attach('*', 'log', function($event) use ($raven, $logLevels) {
             /** @var $event MvcEvent */
             if (is_object($event->getTarget())) {
-                $target   = get_class($event->getTarget());
+                $target = get_class($event->getTarget());
             } else {
                 $target = (string) $event->getTarget();
             }
@@ -160,7 +160,8 @@ class Module
             $priority = (int) $event->getParam('priority', Logger::INFO);
             $message  = sprintf('%s: %s', $target, $message);
             $tags     = $event->getParam('tags', array());
-            $eventID = $raven->captureMessage($message, array(), array('tags' => $tags, 'level' => $logLevels[$priority]));
+            $extra   = $event->getParam('extra', array());
+            $eventID = $raven->captureMessage($message, array(), array('tags' => $tags, 'level' => $logLevels[$priority], 'extra' => $extra));
 
             return $eventID;
         }, 2);
@@ -205,13 +206,13 @@ class Module
      *
      * @param MvcEvent $event
      */
-    protected function setupJavascriptLogging(MvcEvent $event)
-    {
-        $viewHelper = $event->getApplication()->getServiceManager()->get('viewhelpermanager')->get('headscript');
-        $viewHelper->offsetSetFile(0, '//cdn.ravenjs.com/1.1.16/jquery,native/raven.min.js');
-        $publicApiKey = $this->convertKeyToPublic($this->config['zend-sentry']['sentry-api-key']);
-        $viewHelper->offsetSetScript(1, sprintf("Raven.config('%s').install()", $publicApiKey));
-    }
+    // protected function setupJavascriptLogging(MvcEvent $event)
+    // {
+    //     $viewHelper = $event->getApplication()->getServiceManager()->get('viewhelpermanager')->get('headscript');
+    //     $viewHelper->offsetSetFile(0, '//cdn.ravenjs.com/1.1.16/jquery,native/raven.min.js');
+    //     $publicApiKey = $this->convertKeyToPublic($this->config['zend-sentry']['sentry-api-key']);
+    //     $viewHelper->offsetSetScript(1, sprintf("Raven.config('%s').install()", $publicApiKey));
+    // }
 
     /**
      * @param string $key
@@ -219,14 +220,17 @@ class Module
      */
     private function convertKeyToPublic($key)
     {
-        // Find private part
+        // If new DSN is configured, no converting is needed
+        if (substr_count($key, ':') == 1) {
+            return $key;
+        }
+        // If legacy DSN with private part is configured...
+        // ...find private part
         $start = strpos($key, ':', 6);
         $end = strpos($key, '@');
         $privatePart = substr($key, $start, $end - $start);
 
-        // Replace it with an empty string
-        $publicKey = str_replace($privatePart, '', $key);
-
-        return $publicKey;
+        // ... replace it with an empty string
+        return str_replace($privatePart, '', $key);
     }
 }

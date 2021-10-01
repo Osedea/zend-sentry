@@ -14,7 +14,7 @@
     ],
     "require": {
         "php": ">=5.3.0",
-        "raven/raven": "0.13.0"
+        "sentry/sentry": "1.x"
     },
     "conflict": {
         "zendframework/zendframework": ">=2.5.3"

@@ -209,7 +209,7 @@ EOT;
                             ':line',
                             ':stack',
                             ':previous',
-                        ),array(
+                        ), array(
                             get_class($exception),
                             $exception->getMessage(),
                             $exception->getCode(),
