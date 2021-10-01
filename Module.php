@@ -219,14 +219,17 @@ class Module
      */
     private function convertKeyToPublic($key)
     {
-        // Find private part
+        // If new DSN is configured, no converting is needed
+        if (substr_count($key, ':') == 1) {
+            return $key;
+        }
+        // If legacy DSN with private part is configured...
+        // ...find private part
         $start = strpos($key, ':', 6);
         $end = strpos($key, '@');
         $privatePart = substr($key, $start, $end - $start);
 
-        // Replace it with an empty string
-        $publicKey = str_replace($privatePart, '', $key);
-
-        return $publicKey;
+        // ... replace it with an empty string
+        return str_replace($privatePart, '', $key);
     }
 }
